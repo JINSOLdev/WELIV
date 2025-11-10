@@ -49,7 +49,7 @@ model User {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
-  paasswordHash String
+  passwordHash String
   role          UserRole @default(RESIDENT)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now())
