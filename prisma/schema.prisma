@@ -49,7 +49,7 @@ model User {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
-  paasswordHash String
+  passwordHash String
   role          UserRole @default(RESIDENT)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now())
@@ -134,7 +134,7 @@ model Complaint {
   id          String          @id @default(uuid())
   title       String
   content     String
-  stauts      ComplaintStatus @default(RECEIVED)
+  status      ComplaintStatus @default(RECEIVED)
   userId      String
   apartmentId String
   createdAt   DateTime        @default(now())
