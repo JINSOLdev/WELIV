@@ -134,7 +134,7 @@ model Complaint {
   id          String          @id @default(uuid())
   title       String
   content     String
-  stauts      ComplaintStatus @default(RECEIVED)
+  status      ComplaintStatus @default(RECEIVED)
   userId      String
   apartmentId String
   createdAt   DateTime        @default(now())
