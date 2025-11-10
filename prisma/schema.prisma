@@ -5,11 +5,188 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  RESIDENT
+}
+
+enum JoinStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ApartmentStatus {
+  ACTIVE
+  PENDING
+  INACTIVE
+}
+
+enum ComplaintStatus {
+  RECEIVED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum NotificationType {
+  NOTICE
+  COMPLAINT
+  POLL
+}
+
+// 사용자 계정
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  paasswordHash String
+  role          UserRole @default(RESIDENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  managedApartment Apartment?     @relation("AdminApartment")
+  resident         Resident?
+  notifications    Notification[]
+  comments         Comment[]
+  complaints       Complaint[]
+  pollVotes        PollVote[]
+}
+
+// 아파트 정보
+model Apartment {
+  id              String          @id @default(uuid())
+  name            String
+  address         String
+  description     String?
+  officeNumber    String?
+  apartmentStatus ApartmentStatus @default(PENDING)
+
+  // 범위 정보
+  startComplexNumber Int?
+  endComplexNumber   Int?
+  startDongNumber    Int?
+  endDongNumber      Int?
+  startFloorNumber   Int?
+  endFloorNumber     Int?
+  startHoNumber      Int?
+  endHoNumber        Int?
+
+  // 관리자
+  adminId String? @unique
+  admin   User?   @relation("AdminApartment", fields: [adminId], references: [id])
+
+  residents  Resident[]
+  notices    Notice[]
+  complaints Complaint[]
+  poplls     Poll[]
+}
+
+// 입주민 정보 : 아파트 + 사용자 계정 연걸
+model Resident {
+  id          String     @id @default(uuid())
+  userId      String     @unique
+  apartmentId String
+  dong        String
+  ho          String
+  joinStatus  JoinStatus @default(PENDING)
+
+  user      User      @relation(fields: [userId], references: [id])
+  apartment Apartment @relation(fields: [apartmentId], references: [id])
+}
+
+// 공지사항
+model Notice {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  apartmentId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  comments    Comment[]
+}
+
+// 댓글 : 공지, 투표, 민원 공통 사용 가능하도록 boardType + boardId 형태 유지 가능하지만 단순화해서 Notice 전용으로 둠
+model Comment {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  userId    String
+  noticeId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  notice Notice @relation(fields: [noticeId], references: [id])
+}
+
+// 민원
+model Complaint {
+  id          String          @id @default(uuid())
+  title       String
+  content     String
+  stauts      ComplaintStatus @default(RECEIVED)
+  userId      String
+  apartmentId String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  apartment Apartment @relation(fields: [apartmentId], references: [id])
+}
+
+// 투표
+model Poll {
+  id          String   @id @default(ulid())
+  title       String
+  description String?
+  apartmentId String
+  createdAt   DateTime @default(now())
+
+  apartment Apartment    @relation(fields: [apartmentId], references: [id])
+  options   PollOption[]
+}
+
+// 투표 옵션
+model PollOption {
+  id     String @id @default(uuid())
+  text   String
+  pollId String
+
+  poll  Poll       @relation(fields: [pollId], references: [id])
+  votes PollVote[]
+}
+
+// 투표 참여 기록
+model PollVote {
+  id        String   @id @default(uuid())
+  userId    String
+  optionId  String
+  createdAt DateTime @default(now())
+
+  user   User       @relation(fields: [userId], references: [id])
+  option PollOption @relation(fields: [optionId], references: [id])
+
+  @@unique([userId, optionId])
+}
+
+// 알림
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  userId    String
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }
